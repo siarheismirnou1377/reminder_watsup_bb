@@ -5,6 +5,7 @@
 - `send_reminder(phone_number: str, reminder_text: str)`: Отправляет напоминание через WhatsApp.
 - `create_reminder(reminder: Reminder)`: Создает и сохраняет напоминание в базе данных.
 - `get_reminders(phone_number: str)`: Возвращает все напоминания для указанного номера телефона.
+- `get_reminder(reminder_id: int, phone_number: str):`: Возвращает напоминание по id для указанного номера телефона.
 - `delete_reminder(reminder_id: int)`: Удаляет напоминание по его ID.
 
 Описание:
@@ -29,7 +30,8 @@ from database import (
     create_database,
     delete_reminder_by_id,
     get_reminders_by_phone_number,
-    save_reminder
+    save_reminder,
+    get_reminder_by_id_for_phone
 )
 from logger import setup_logger
 from config import ACCOUNT_SID, AUTH_TOKEN, FROM_NUMBER
@@ -66,7 +68,7 @@ def send_reminder(phone_number: str, reminder_text: str):
             to=f'whatsapp:{phone_number}'
         )
         logger.info("Напоминание, отправленно на %s : %s", phone_number, reminder_text)
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Напоминание не отправлено. Ошибка в функции send_reminder -\n %s", e)
 
 @app.post("/reminder/")
@@ -90,7 +92,7 @@ async def create_reminder(reminder: Reminder):
             args=[reminder.phone_number, reminder.reminder_text]
         )
         return {"message": "Напоминание установлено успешно"}
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Ошибка в функции create_reminder - \n %s", e)
 
 @app.get("/reminders/")
@@ -107,8 +109,27 @@ async def get_reminders(phone_number: str):
     try:
         reminders = get_reminders_by_phone_number(C, phone_number)
         return {"reminders": reminders}
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Ошибка в функции get_reminders - \n %s", e)
+
+@app.get("/reminder/{reminder_id}")
+async def get_reminder(reminder_id: int, phone_number: str):
+    """
+    Возвращает напоминание по его ID и номеру телефона.
+
+    Параметры:
+        reminder_id (int): ID напоминания.
+        phone_number (str): Номер телефона.
+
+    Возвращает:
+        dict: Напоминание, если найдено и принадлежит указанному номеру, иначе сообщение об ошибке.
+    """
+    try:
+        result = get_reminder_by_id_for_phone(C, reminder_id, phone_number)
+        return result
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Ошибка в функции get_reminder - \n %s", e)
+        return {"message": "Произошла ошибка при получении напоминания"}
 
 @app.delete("/reminder/{reminder_id}")
 async def delete_reminder(reminder_id: int):
@@ -124,7 +145,7 @@ async def delete_reminder(reminder_id: int):
     try:
         delete_reminder_by_id(CONN, C, reminder_id)
         return {"message": "Напоминание успешно удалено"}
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error("Ошибка в функции delete_reminder - \n %s", e)
 
 if __name__ == "__main__":
