@@ -22,6 +22,7 @@
 """
 
 import datetime
+import uvicorn
 from fastapi import FastAPI
 from twilio.rest import Client
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -149,5 +150,4 @@ async def delete_reminder(reminder_id: int):
         logger.error("Ошибка в функции delete_reminder - \n %s", e)
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
