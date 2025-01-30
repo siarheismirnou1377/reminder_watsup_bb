@@ -155,7 +155,6 @@ async def delete_reminder(reminder_id: int):
         dict: Сообщение об успешном удалении напоминания.
     """
     try:
-        # Проверяем, существует ли напоминание
         reminder = get_reminder_by_id_for_phone(C, reminder_id, "*")
         if not reminder:
             raise HTTPException(status_code=404, detail="Напоминание не найдено")
