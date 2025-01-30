@@ -23,7 +23,7 @@
 
 import datetime
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from twilio.rest import Client
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -69,8 +69,9 @@ def send_reminder(phone_number: str, reminder_text: str):
             to=f'whatsapp:{phone_number}'
         )
         logger.info("Напоминание, отправленно на %s : %s", phone_number, reminder_text)
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         logger.error("Напоминание не отправлено. Ошибка в функции send_reminder -\n %s", e)
+        raise HTTPException(status_code=500, detail="Ошибка при отправке напоминания") from e
 
 @app.post("/reminder/")
 async def create_reminder(reminder: Reminder):
@@ -84,8 +85,14 @@ async def create_reminder(reminder: Reminder):
         dict: Сообщение об успешном создании напоминания.
     """
     try:
-        save_reminder(CONN, C, reminder)
+        # Проверка корректности формата времени
         reminder_time = datetime.datetime.strptime(reminder.reminder_time, "%Y-%m-%d %H:%M:%S")
+    except ValueError as e:
+        logger.error("Некорректный формат времени: %s", e)
+        raise HTTPException(status_code=400, detail="Некорректный формат времени. Используйте формат 'YYYY-MM-DD HH:MM:SS'.") from e
+
+    try:
+        save_reminder(CONN, C, reminder)
         scheduler.add_job(
             send_reminder,
             'date',
@@ -93,8 +100,9 @@ async def create_reminder(reminder: Reminder):
             args=[reminder.phone_number, reminder.reminder_text]
         )
         return {"message": "Напоминание установлено успешно"}
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         logger.error("Ошибка в функции create_reminder - \n %s", e)
+        raise HTTPException(status_code=500, detail="Ошибка при создании напоминания") from e
 
 @app.get("/reminders/")
 async def get_reminders(phone_number: str):
@@ -110,8 +118,9 @@ async def get_reminders(phone_number: str):
     try:
         reminders = get_reminders_by_phone_number(C, phone_number)
         return {"reminders": reminders}
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         logger.error("Ошибка в функции get_reminders - \n %s", e)
+        raise HTTPException(status_code=500, detail="Ошибка при получении напоминаний") from e
 
 @app.get("/reminder/{reminder_id}")
 async def get_reminder(reminder_id: int, phone_number: str):
@@ -127,10 +136,12 @@ async def get_reminder(reminder_id: int, phone_number: str):
     """
     try:
         result = get_reminder_by_id_for_phone(C, reminder_id, phone_number)
+        if not result:
+            raise HTTPException(status_code=404, detail="Напоминание не найдено")
         return result
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         logger.error("Ошибка в функции get_reminder - \n %s", e)
-        return {"message": "Произошла ошибка при получении напоминания"}
+        raise HTTPException(status_code=500, detail="Ошибка при получении напоминания") from e
 
 @app.delete("/reminder/{reminder_id}")
 async def delete_reminder(reminder_id: int):
@@ -144,10 +155,16 @@ async def delete_reminder(reminder_id: int):
         dict: Сообщение об успешном удалении напоминания.
     """
     try:
+        # Проверяем, существует ли напоминание
+        reminder = get_reminder_by_id_for_phone(C, reminder_id, "*")
+        if not reminder:
+            raise HTTPException(status_code=404, detail="Напоминание не найдено")
+
         delete_reminder_by_id(CONN, C, reminder_id)
         return {"message": "Напоминание успешно удалено"}
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         logger.error("Ошибка в функции delete_reminder - \n %s", e)
+        raise HTTPException(status_code=500, detail="Ошибка при удалении напоминания") from e
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
