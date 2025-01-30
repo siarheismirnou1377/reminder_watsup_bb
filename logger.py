@@ -17,7 +17,7 @@
 """
 
 import logging
-import os  # Добавлен модуль os для работы с файловой системой
+import os
 from logging.handlers import RotatingFileHandler
 
 def setup_logger(name_file, name_logger):
@@ -35,7 +35,6 @@ def setup_logger(name_file, name_logger):
         logger = setup_logger("parser_main_log", "parser_main_logger")
         logger.info("Это тестовое сообщение.")
     """
-    # Создаем папку logs, если она не существует
     logs_dir = "logs"
     if not os.path.exists(logs_dir):
         os.makedirs(logs_dir)
