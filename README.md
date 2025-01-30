@@ -17,7 +17,6 @@
 ## Требования
 
 - Docker
-- Docker Compose (опционально)
 
 ---
 
@@ -26,18 +25,18 @@
 ### 1. Клонируйте репозиторий
 
 ```bash
-git clone https://github.com/ваш-репозиторий.git
-cd ваш-репозиторий
+git clone https://github.com/siarheismirnou1377/reminder_watsup_bb.git
+cd reminder_watsup_bb
 ```
 
-### 2. Создайте файл `.env`
+### 2. Создайте файл `config.env`
 
 Создайте файл `.env` в корневой директории проекта и добавьте в него переменные окружения:
 
 ```plaintext
-ACCOUNT_SID=ваш_account_sid
-AUTH_TOKEN=ваш_auth_token
-FROM_NUMBER=ваш_from_number
+ACCOUNT_SID=ваш sid
+AUTH_TOKEN=ваш токен 
+FROM_NUMBER=ваш номер
 ```
 
 ### 3. Соберите Docker-образ
@@ -56,22 +55,9 @@ docker run -d -p 8000:8000 --name reminder-container reminder-app
 
 Приложение будет доступно по адресу:
 
-```
+``` text
 http://localhost:8000
 
-```
-
----
-
-## Использование Docker Compose (опционально)
-
-Если вы хотите использовать Docker Compose, выполните следующие шаги:
-
-1. Убедитесь, что у вас установлен Docker Compose.
-2. Запустите проект:
-
-```bash
-docker-compose up -d
 ```
 
 ---
@@ -119,6 +105,23 @@ docker-compose up -d
   }
   ```
 
+### Получение напоминания по ID
+
+- Метод: GET
+- URL: /reminder/{reminder_id}?phone_number=+79123456789
+- Ответ:
+
+```json
+   
+    {
+        "id": 1,
+        "phone_number": "+79123456789",
+        "reminder_text": "Позвонить маме",
+        "reminder_time": "2023-10-01 12:00:00"
+    }
+    
+```
+
 ### Удаление напоминания
 
 - **Метод**: `DELETE`
@@ -158,11 +161,5 @@ docker rmi reminder-app
 ## Логирование
 
 Логи приложения сохраняются в папке `logs` в файле `main_log.log`.
-
----
-
-## Лицензия
-
-Этот проект распространяется под лицензией MIT. Подробности см. в файле [LICENSE](LICENSE).
 
 ---
